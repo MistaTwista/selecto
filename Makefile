@@ -11,7 +11,7 @@ lint: install-linter
 
 .PHONY: build
 build: ## Build a binary
-	go build main.go
+	go build -o build/selecto main.go
 
 .PHONY: help
 .DEFAULT_GOAL := help
