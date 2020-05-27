@@ -16,9 +16,11 @@ build: ## Build a binary
 exec: build ## Build and exec binary
 	./bin/selecto
 
-test: ## Run test with reedo
-	# ./bin/gena -d 4s -e 100ms | grep 9 | bin/reedo
+treedo: build ## Build and run test with reedo
 	./bin/gena -d 4s -e 100ms | bin/reedo
+
+test: build ## Build and run test with selecto
+	./bin/gena -d 1s -e 10ms | bin/selecto --stdin | cat
 
 .PHONY: help
 .DEFAULT_GOAL := help

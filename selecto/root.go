@@ -1,9 +1,12 @@
 package selecto
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
-	"log"
+	"os"
+	// "log"
+	"io"
 
 	"github.com/jroimartin/gocui"
 )
@@ -14,47 +17,90 @@ var (
 	KeyK = rune(107)
 )
 
+type Result struct {
+	Line *string
+	Error error
+}
+
 type Selecto struct {
-	lines        []string
-	selectedLine string
+	source chan string
+	result chan Result
+	gui *gocui.Gui
 }
 
-func NewSelecto(lines []string) *Selecto {
-	return &Selecto{
-		lines: lines,
-	}
-}
+func NewSelecto(r io.Reader) (chan Result, error) {
+	scanner := bufio.NewScanner(r)
+	source := make(chan string, 20)
+	go func() {
+		for scanner.Scan() {
+			source <- scanner.Text()
+		}
+	}()
 
-func cursorDown(g *gocui.Gui, v *gocui.View) error {
-	if v == nil {
-		return nil
-	}
-
-	cx, cy := v.Cursor()
-	text, err := v.Line(cy + 1)
+	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
-		return err
-	}
-	if text == "" {
-		return nil
+		return nil, fmt.Errorf("cannot create gui %w", err)
 	}
 
-	if err := v.SetCursor(cx, cy+1); err != nil {
-		return err
+	s := &Selecto{
+		source: source,
+		result: make(chan Result, 1),
+		gui: g,
 	}
 
-	return nil
+	g.SetManagerFunc(s.layout)
+
+	if err = s.keybinding(g); err != nil {
+		return nil, fmt.Errorf("cannot set keybindings %w", err)
+	}
+
+	go func() {
+		defer g.Close()
+		fmt.Fprintln(os.Stdout, "Run loop")
+		err := g.MainLoop()
+		if err != nil {
+			fmt.Fprintf(os.Stdout, "Error: %s, %t\n", err.Error(), errors.Is(gocui.ErrQuit, err))
+		}
+		if err != nil && !errors.Is(gocui.ErrQuit, err) {
+			s.result <- Result{
+				Line: nil,
+				Error: fmt.Errorf("stopped with %w", err),
+			}
+		}
+
+		fmt.Fprintln(os.Stdout, "Stop")
+	}()
+
+	fmt.Fprintln(os.Stdout, "NewSelecto")
+
+	return s.result, nil
 }
 
-func cursorUp(g *gocui.Gui, v *gocui.View) error {
-	if v == nil {
-		return nil
-	}
+func (s *Selecto) layout(g *gocui.Gui) error {
+	maxX, maxY := g.Size()
+	// g.Cursor = true
+	g.Cursor = false
+	if v, err := g.SetView("list", 0, 0, maxX-1, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Highlight = true
+		v.SelBgColor = gocui.ColorGreen
+		v.SelFgColor = gocui.ColorBlack
+		v.FgColor = gocui.ColorGreen
+		v.Title = "Select..."
 
-	ox, oy := v.Origin()
-	cx, cy := v.Cursor()
-	if err := v.SetCursor(cx, cy-1); err != nil && oy > 0 {
-		if err := v.SetOrigin(ox, oy-1); err != nil {
+		go func() {
+			for line := range s.source {
+				if line == "" { continue }
+				fmt.Fprintln(v, line)
+				g.Update(func(g *gocui.Gui) error {
+					return nil
+				})
+			}
+		}()
+
+		if _, err = g.SetCurrentView("list"); err != nil {
 			return err
 		}
 	}
@@ -69,17 +115,20 @@ func (s *Selecto) getLine(g *gocui.Gui, v *gocui.View) error {
 		return err
 	}
 
-	s.selectedLine = line
+	s.result <- Result{
+		Line: &line,
+	}
 
-	return gocui.ErrQuit
+	// return quit(g, v)
+	return nil
 }
 
 func (s *Selecto) keybinding(g *gocui.Gui) error {
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, s.quit); err != nil {
+	if err := g.SetKeybinding("list", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
 	}
 
-	if err := g.SetKeybinding("", KeyQ, gocui.ModNone, s.quit); err != nil {
+	if err := g.SetKeybinding("list", KeyQ, gocui.ModNone, quit); err != nil {
 		return err
 	}
 
@@ -104,59 +153,4 @@ func (s *Selecto) keybinding(g *gocui.Gui) error {
 	}
 
 	return nil
-}
-
-func (s *Selecto) Select() (string, error) {
-	g, err := gocui.NewGui(gocui.OutputNormal)
-	if err != nil {
-		log.Panicln(err)
-	}
-	defer g.Close()
-
-	g.Cursor = true
-	g.SetManagerFunc(s.layout)
-
-	if err = s.keybinding(g); err != nil {
-		log.Panicln(err)
-	}
-
-	err = g.MainLoop()
-	if err != nil && !errors.Is(gocui.ErrQuit, err) {
-		log.Panicln(err)
-	}
-
-	return s.selectedLine, nil
-}
-
-func (s *Selecto) layout(g *gocui.Gui) error {
-	maxX, maxY := g.Size()
-	g.Cursor = false
-	if v, err := g.SetView("list", 0, 0, maxX-1, maxY-1); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Highlight = true
-		v.SelBgColor = gocui.ColorGreen
-		v.SelFgColor = gocui.ColorBlack
-		v.FgColor = gocui.ColorGreen
-		v.Title = "Select row..."
-
-		for _, line := range s.lines {
-			if line == "" {
-				continue
-			}
-
-			fmt.Fprintln(v, line)
-		}
-
-		if _, err = g.SetCurrentView("list"); err != nil {
-			log.Panicln(err)
-		}
-	}
-
-	return nil
-}
-
-func (s *Selecto) quit(g *gocui.Gui, v *gocui.View) error {
-	return gocui.ErrQuit
 }
