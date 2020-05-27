@@ -7,11 +7,16 @@ lint: install-linter
 	@golangci-lint run
 
 .PHONY: build
-build: ## Build a binary
+build: build-gena build-reedo ## Build binaries
 	go build -o bin/selecto main.go
-	go build -o bin/gena gena/gena.go
-	go build -o bin/reedo reedo/reedo.go
 
+.PHONY: build-gena
+build-gena:
+	${MAKE} -C gena build
+
+.PHONY: build-reedo
+build-reedo:
+	${MAKE} -C reedo build
 
 exec: build ## Build and exec binary
 	./bin/selecto
@@ -21,9 +26,6 @@ treedo: build ## Build and run test with reedo
 
 test: build ## Build and run test with selecto
 	./bin/gena -d 1s -e 10ms | bin/selecto --stdin | cat
-
-ttt: ## TTT
-	grep -E 'Host [^*]' ~/.ssh/config* | awk 'BEGIN {FS=":Host "}; {printf "%s @ %s\n", $2, $1}' | ./bin/selecto | awk 'BEGIN {FS=" @ "}; {printf "ssh %s -F %s\n", $1, $2}' | echo
 
 .PHONY: help
 .DEFAULT_GOAL := help
