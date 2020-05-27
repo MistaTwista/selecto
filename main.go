@@ -1,8 +1,6 @@
 package main
 
 import (
-	// "bufio"
-	// "io"
 	"fmt"
 	"log"
 	"os"
@@ -27,19 +25,20 @@ func main() {
 		printHelp()
 		return
 	case "--stdin":
-		resultChan, err := selecto.NewSelecto(os.Stdin)
-		if err == nil {
+		s, err := selecto.NewSelecto(os.Stdin)
+		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Fprintln(os.Stdout, "Wait for chan")
-		result := <- resultChan
-		fmt.Fprintln(os.Stdout, "Chan ok")
+		result := s.WaitForSelect()
 		if result.Error != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Fprintf(os.Stdout, "%s\n", *result.Line)
+		selectedLine := *result.Line
+		if selectedLine != "" {
+			fmt.Fprintf(os.Stdout, "%s\n", selectedLine)
+		}
 	default:
 		return
 	}

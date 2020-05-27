@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// reedo is here just to check concept
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -23,7 +24,6 @@ func main() {
 	for scanner.Scan() {
 		txt := scanner.Text()
 		input <- txt
-		// fmt.Fprintf(os.Stdout, "Scanned: %s\n", txt)
 	}
 
 	close(input)

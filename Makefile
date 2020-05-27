@@ -22,6 +22,9 @@ treedo: build ## Build and run test with reedo
 test: build ## Build and run test with selecto
 	./bin/gena -d 1s -e 10ms | bin/selecto --stdin | cat
 
+ttt: ## TTT
+	grep -E 'Host [^*]' ~/.ssh/config* | awk 'BEGIN {FS=":Host "}; {printf "%s @ %s\n", $2, $1}' | ./bin/selecto | awk 'BEGIN {FS=" @ "}; {printf "ssh %s -F %s\n", $1, $2}' | echo
+
 .PHONY: help
 .DEFAULT_GOAL := help
 help:
