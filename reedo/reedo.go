@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// reedo is here just to check concept
+// reedo is just a helper tool to check concept
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -22,8 +22,7 @@ func main() {
 	}()
 
 	for scanner.Scan() {
-		txt := scanner.Text()
-		input <- txt
+		input <- scanner.Text()
 	}
 
 	close(input)

@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-// gena is just for generating testing strings
+// gena is just a helper tool for generating testing strings
 func main() {
 	endString := flag.String("end", "END", "End string")
 	dieDurationString := flag.String("d", "3s", "Die after")
@@ -30,14 +30,14 @@ func main() {
 
 	for {
 		select {
-		case _ = <- time.After(ge):
+		case <- time.After(ge):
 			text := time.Now().String()
 			if *seqBool {
 				text = strconv.Itoa(seq)
 			}
 			fmt.Fprintln(os.Stdout, text)
 			seq++
-		case _ = <- brk:
+		case <- brk:
 			fmt.Fprintln(os.Stdout, *endString)
 			return
 		}

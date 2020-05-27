@@ -11,6 +11,10 @@ const (
 	BORDER_SIZE = 2
 )
 
+var DEBUG = os.Getenv("DEBUG") // turn on view debug info
+
+// Move cursor up
+// When cursor is near to top border it scrolls Origin and stay few lines before the border
 func cursorUp(g *gocui.Gui, v *gocui.View) error {
 	if v == nil {
 		return nil
@@ -18,7 +22,10 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 
 	ox, oy := v.Origin()
 	cx, cy := v.Cursor()
-	v.Title = title(v)
+	if DEBUG != "" {
+		v.Title = title(v)
+	}
+
 
 	if oy > 0 && cy <= BORDER_SIZE {
 		if err := v.SetOrigin(ox, oy-1); err != nil {
@@ -41,10 +48,6 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 }
 
 func title(v *gocui.View) string {
-	if os.Getenv("DEBUG") == "" {
-		return fmt.Sprintf("Select...")
-	}
-
 	ox, oy := v.Origin()
 	cx, cy := v.Cursor()
 	sx, sy := v.Size()
@@ -54,6 +57,8 @@ func title(v *gocui.View) string {
 	return fmt.Sprintf("Select... (wh(%d, %d), origin(%d,%d), cur(%d, %d), buf(%d), vbuf(%d))", sx, sy, ox,oy, cx,cy, bl, vbl)
 }
 
+// Move cursor down
+// When cursor is near to bottom border it scrolls Origin and stay few lines before the border
 func cursorDown(g *gocui.Gui, v *gocui.View) error {
 	if v == nil {
 		return nil
@@ -63,7 +68,9 @@ func cursorDown(g *gocui.Gui, v *gocui.View) error {
 	cx, cy := v.Cursor()
 	_, sy := v.Size()
 
-	v.Title = title(v)
+	if DEBUG != "" {
+		v.Title = title(v)
+	}
 
 	// get text in next line
 	text, err := v.Line(cy+1)
