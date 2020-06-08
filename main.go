@@ -8,7 +8,7 @@ import (
 )
 
 func printHelp() {
-	fmt.Println(`Selecto use STDIN to select`)
+	fmt.Println("Selecto select from STDIN")
 	fmt.Println(`Usage: selecto [--stdin]
 For help use --help`)
 }
@@ -37,7 +37,7 @@ func main() {
 
 		selectedLine := *result.Line
 		if selectedLine != "" {
-			fmt.Fprintf(os.Stdout, "%s\n", selectedLine)
+			fmt.Fprintf(os.Stdout, "%s", selectedLine)
 		}
 	default:
 		return

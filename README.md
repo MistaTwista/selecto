@@ -5,9 +5,10 @@ stdin -> selecto -> stdout
 
 # Examples
 ```bash
-$ ll | selecto --stdin | cat
+# download file from list of urls
 $ cat urls.txt | selecto --stdin | xargs wget
-$ cat ~/.ssh/config | grep "Host " | awk '{print $2}' | ./bin/selecto --stdin | xargs -i ssh -tt {}
+# show logs of some docker container
+$ docker ps | tr -s ' ' | cut -d ' ' -f 1,2 | selecto --stdin | awk '{printf("%02d",$1)}' | xargs -0 -I {} docker logs {} -f
 ```
 
 ## Gena

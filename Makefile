@@ -10,6 +10,10 @@ lint: install-linter
 build: build-gena build-reedo ## Build binaries
 	go build -o bin/selecto main.go
 
+.PHONY: install
+install: build ## Build and install to user bin
+	cp bin/selecto ~/.bin/selecto
+
 .PHONY: build-gena
 build-gena:
 	${MAKE} -C gena build
