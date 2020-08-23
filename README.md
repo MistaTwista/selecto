@@ -1,4 +1,8 @@
 # Selecto
+
+## deprecated
+This project is reinvention of [fzf](https://github.com/junegunn/fzf)
+
 Interactive filter of stdin
 
 stdin -> selecto -> stdout
